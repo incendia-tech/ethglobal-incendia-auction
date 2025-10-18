@@ -16,6 +16,7 @@ contract Factory {
     function deployAuctionContract(
         bytes32 _salt,
         CeremonyType _ceremonyType,
+        address _verifier,
         uint256 _biddingDealine,
         uint256 _submissionDeadline,
         uint256 _resultDeadline,
@@ -32,6 +33,7 @@ contract Factory {
         }
 
         Auction(deployedAddress).initialize(
+            _verifier,
             _biddingDealine,
             _submissionDeadline,
             _resultDeadline,
