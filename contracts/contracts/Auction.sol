@@ -20,6 +20,9 @@ contract Auction {
     uint256[] winningBids;
     address[] winners;
 
+    event BidSubmitted(address indexed bidder, uint256 bid);
+
+
     bool private initialized = false;
     mapping(uint256 => bool) public usedNullifiers;
 
@@ -58,6 +61,9 @@ contract Auction {
         usedNullifiers[pubSignals[1]] = true;
 
         checkAndInsertBid(pubSignals[3], msg.sender);
+
+        emit BidSubmitted(msg.sender, pubSignals[3]);
+
 
         
     }
