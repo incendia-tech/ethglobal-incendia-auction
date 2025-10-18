@@ -39,4 +39,23 @@ contract Auction {
     }
 
 
+    function submitBid(
+        uint256[2] calldata proofA,
+        uint256[2][2] calldata proofB,
+        uint256[2] calldata proofC,
+        uint256[6] calldata pubSignals
+    ) external payable {
+
+        bool proofIsValid = verifier.verifyProof(
+            proofA, proofB, proofC, pubSignals
+        );
+        require(proofIsValid, "Invalid proof");
+
+        if(pubSignals[3] > winningBids[0]){
+          winningBids[0] = pubSignals[3];
+          winners[0] = msg.sender;
+        }
+    }
+
+
 }
