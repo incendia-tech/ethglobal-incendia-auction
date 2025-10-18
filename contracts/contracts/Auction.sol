@@ -64,4 +64,20 @@ contract Auction {
     }
 
 
+    function checkAndInsertBid(uint256 bid, address bidder) internal returns (bool) {
+        for (uint256 i = 0; i < winners.length; i++) {
+            if (bid > winningBids[i]) {
+                for (uint256 j = winners.length - 1; j > i; j--) {
+                    winners[j] = winners[j - 1];
+                    winningBids[j] = winningBids[j - 1];
+                }
+                winningBids[i] = bid;
+                winners[i] = bidder;
+                return true;
+            }
+        }
+        return false;
+    }
+
+
 }
