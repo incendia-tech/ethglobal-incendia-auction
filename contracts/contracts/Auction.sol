@@ -50,7 +50,8 @@ contract Auction {
         uint256[2] calldata proofA,
         uint256[2][2] calldata proofB,
         uint256[2] calldata proofC,
-        uint256[6] calldata pubSignals
+        uint256[6] calldata pubSignals,
+        uint256 _bid
     ) external payable {
 
         bool proofIsValid = verifier.verifyProof(
@@ -60,7 +61,7 @@ contract Auction {
 
         usedNullifiers[pubSignals[1]] = true;
 
-        checkAndInsertBid(pubSignals[3], msg.sender);
+        checkAndInsertBid(_bid, msg.sender);
 
         emit BidSubmitted(msg.sender, pubSignals[3]);
 
