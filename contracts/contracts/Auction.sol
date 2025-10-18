@@ -7,6 +7,8 @@ import "./verifier.sol";
 contract Auction {
    Groth16Verifier public verifier;
 
+   error InvalidProof();
+
     uint256 public ceremonyId;
 
     uint256 public biddingDeadline;
@@ -51,7 +53,7 @@ contract Auction {
         bool proofIsValid = verifier.verifyProof(
             proofA, proofB, proofC, pubSignals
         );
-        require(proofIsValid, "Invalid proof");
+        if (!proofIsValid) revert InvalidProof();
 
         usedNullifiers[pubSignals[1]] = true;
 
