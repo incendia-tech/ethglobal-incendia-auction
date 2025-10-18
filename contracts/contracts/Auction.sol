@@ -12,12 +12,14 @@ contract Auction {
     uint256 public biddingDeadline;
     uint256 public bidSubmissionDeadline;
     uint256 public resultDeadline;
+    
 
 
     uint256[] winningBids;
     address[] winners;
 
     bool private initialized = false;
+    mapping(uint256 => bool) public usedNullifiers;
 
 
     function initialize(
@@ -50,6 +52,8 @@ contract Auction {
             proofA, proofB, proofC, pubSignals
         );
         require(proofIsValid, "Invalid proof");
+
+        usedNullifiers[pubSignals[1]] = true;
 
         if(pubSignals[3] > winningBids[0]){
           winningBids[0] = pubSignals[3];
