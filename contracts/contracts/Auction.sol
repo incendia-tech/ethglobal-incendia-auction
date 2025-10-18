@@ -57,10 +57,9 @@ contract Auction {
 
         usedNullifiers[pubSignals[1]] = true;
 
-        if(pubSignals[3] > winningBids[0]){
-          winningBids[0] = pubSignals[3];
-          winners[0] = msg.sender;
-        }
+        checkAndInsertBid(pubSignals[3], msg.sender);
+
+        
     }
 
 
