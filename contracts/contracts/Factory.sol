@@ -24,15 +24,21 @@ contract Factory {
         uint256 _maxWinners
     ) external returns (address) {
         if (contracts[_salt] != address(0)) revert SaltAlreadyUsed(_salt);
+        
+        // Deploy using CREATE2
         bytes memory bytecode = getCeremonyBytecode(_ceremonyType);
-
-        address deployedAddress;
-
+        address auctionAddress;
+        
         assembly {
-            deployedAddress := create2(0, add(bytecode, 0x20), mload(bytecode), _salt)
+            auctionAddress := create2(0, add(bytecode, 0x20), mload(bytecode), _salt)
+            if iszero(auctionAddress) {
+                revert(0, 0)
+            }
         }
-
-        Auction(deployedAddress).initialize(
+        
+        
+        // Initialize the deployed contract
+        Auction(auctionAddress).initialize(
             _verifier,
             _biddingDealine,
             _submissionDeadline,
@@ -41,16 +47,16 @@ contract Factory {
             _maxWinners
         );
 
-        contracts[_salt] = deployedAddress;
-        emit Deployed(deployedAddress, _ceremonyType);
+        contracts[_salt] = auctionAddress;
+        emit Deployed(auctionAddress, _ceremonyType);
 
-        return deployedAddress;
+        return auctionAddress;
     }
 
 
     function getCeremonyBytecode(CeremonyType votingType) internal pure returns (bytes memory) {
         if (votingType == CeremonyType.Auction) {
-            return type(Auction).creationCode;
+            return abi.encodePacked(type(Auction).creationCode);
         } else{
             revert InvalidCeremonyType();
         }

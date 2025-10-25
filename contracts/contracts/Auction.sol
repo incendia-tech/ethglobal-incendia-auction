@@ -26,7 +26,7 @@ contract Auction {
     bool private initialized = false;
     mapping(uint256 => bool) public usedNullifiers;
 
-
+// dont need a construtor since its deployed through factory
     function initialize(
         address _verifier,
         uint256 _biddingDeadline,
@@ -53,6 +53,8 @@ contract Auction {
         uint256[6] calldata pubSignals,
         uint256 _bid
     ) external payable {
+        // Check if nullifier has already been used
+        if (usedNullifiers[pubSignals[1]]) revert InvalidProof();
 
         bool proofIsValid = verifier.verifyProof(
             proofA, proofB, proofC, pubSignals
@@ -64,9 +66,6 @@ contract Auction {
         checkAndInsertBid(_bid, msg.sender);
 
         emit BidSubmitted(msg.sender, pubSignals[3]);
-
-
-        
     }
 
 
