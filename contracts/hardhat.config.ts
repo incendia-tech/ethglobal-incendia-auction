@@ -15,6 +15,10 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
+    hardhat: {
+      type: "edr-simulated",
+      chainType: "l1",
+    },
     hardhatMainnet: {
       type: "edr-simulated",
       chainType: "l1",
