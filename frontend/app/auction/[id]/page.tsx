@@ -16,6 +16,7 @@ import { sendTransaction, waitForTransaction } from "@/lib/ethereum/transactions
 import { submitBidToContract, parseGroth16Proof, type Groth16Proof } from "@/lib/contracts/auction"
 import { getAuctionDetails } from "@/lib/contracts/factory"
 import { BurnAddressCalculator } from "@/lib/contracts/burn-address-calculator"
+import { loadProofData, submitProofToBackend, type LoadedProofData } from "@/lib/proof-loader"
 import type { ProofData } from "@/lib/contracts/auction-abi"
 
 
@@ -42,6 +43,10 @@ export default function AuctionPage() {
   const [proofError, setProofError] = useState("")
   const [auctionDetails, setAuctionDetails] = useState<any>(null)
   const [auctionLoading, setAuctionLoading] = useState(true)
+  const [loadedProofData, setLoadedProofData] = useState<LoadedProofData | null>(null)
+  const [proofLoading, setProofLoading] = useState(false)
+  const [proofSubmissionStatus, setProofSubmissionStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [proofSubmissionTxHash, setProofSubmissionTxHash] = useState("")
 
   useEffect(() => {
     // Set contract address from URL parameter and fetch auction details
@@ -55,13 +60,39 @@ export default function AuctionPage() {
   const loadAuctionDetails = async (auctionAddress: string) => {
     try {
       setAuctionLoading(true)
+      setError("")
       const details = await getAuctionDetails(auctionAddress)
       setAuctionDetails(details)
     } catch (error) {
       console.error("Failed to load auction details:", error)
       setError("Failed to load auction details")
+      // Set default auction details to prevent crashes
+      setAuctionDetails({
+        biddingDeadline: 0,
+        bidSubmissionDeadline: 0,
+        resultDeadline: 0,
+        ceremonyId: 0,
+      })
     } finally {
       setAuctionLoading(false)
+    }
+  }
+
+  const loadProofDataFromBackend = async () => {
+    try {
+      setProofLoading(true)
+      setProofError("")
+      const data = await loadProofData()
+      setLoadedProofData(data)
+      setProofJson(JSON.stringify(data.proof, null, 2))
+      setPublicSignals(JSON.stringify(data.publicSignals, null, 2))
+      setParsedProof(parseGroth16Proof(JSON.stringify(data.proof)))
+      setCurrentStep("submit")
+    } catch (error: any) {
+      console.error("Failed to load proof data:", error)
+      setProofError(error.message || "Failed to load proof data")
+    } finally {
+      setProofLoading(false)
     }
   }
 
@@ -116,6 +147,11 @@ export default function AuctionPage() {
     setError("")
 
     try {
+      // Check if auction details are loaded
+      if (!auctionDetails) {
+        throw new Error("Auction details not loaded yet")
+      }
+
       // Convert burn amount to wei (BigInt)
       const burnAmountWei = BigInt(Math.floor(Number.parseFloat(burnAmount) * 1e18))
       
@@ -123,7 +159,7 @@ export default function AuctionPage() {
       const burnAddress = BurnAddressCalculator.generateBurnAddress(
         walletAddress,
         contractAddress,
-        auctionDetails?.ceremonyId || 0,
+        auctionDetails.ceremonyId || 0,
         burnAmountWei.toString()
       )
       
@@ -144,6 +180,9 @@ export default function AuctionPage() {
       setTxConfirmations(1)
       setCurrentStep("proof")
       setIsProcessing(false)
+      
+      // Automatically load proof data after burn transaction
+      await loadProofDataFromBackend()
     } catch (error: any) {
       console.error("Burn transaction failed:", error)
       setError(error.message || "Burn transaction failed")
@@ -171,15 +210,34 @@ export default function AuctionPage() {
 
     setIsProcessing(true)
     setError("")
+    setProofSubmissionStatus('loading')
 
     try {
       const bidAmountWei = Math.floor(Number.parseFloat(bidAmount) * 1e18).toString()
-      const txHash = await submitBidToContract(contractAddress, parsedProof, bidAmountWei)
-      setBidSubmitTxHash(txHash)
-      setCurrentStep("complete")
+      
+      // Submit proof to backend
+      const result = await submitProofToBackend(
+        contractAddress,
+        burnTxHash,
+        bidAmountWei,
+        walletAddress
+      )
+
+      if (result.success && result.transactionHash) {
+        setProofSubmissionTxHash(result.transactionHash)
+        setBidSubmitTxHash(result.transactionHash)
+        setProofSubmissionStatus('success')
+        setCurrentStep("complete")
+        
+        // Log the result message for debugging
+        console.log('Proof submission result:', result.message)
+      } else {
+        throw new Error(result.error || "Proof submission failed")
+      }
     } catch (error: any) {
       console.error("Bid submission failed:", error)
       setError(error.message || "Bid submission failed")
+      setProofSubmissionStatus('error')
     } finally {
       setIsProcessing(false)
     }
@@ -513,6 +571,7 @@ export default function AuctionPage() {
                       !burnAmount ||
                       !bidAmount ||
                       !contractAddress ||
+                      !auctionDetails ||
                       Number.parseFloat(bidAmount) < 0.001
                     }
                   >
@@ -563,20 +622,26 @@ export default function AuctionPage() {
                 </div>
               )}
 
-              {/* Step 4: Input Proof Data */}
+              {/* Step 4: Loading Proof Data */}
               {currentStep === "proof" && (
                 <div className="space-y-6">
                   <div className="text-center py-4">
                     <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Transaction Confirmed!</h3>
                     <p className="text-gray-600">
-                      Now provide your Zero-Knowledge proof data to continue
+                      Loading mock proof data for demonstration...
                     </p>
                   </div>
 
                   {proofError && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                       <p className="text-sm text-red-800">{proofError}</p>
+                      <button 
+                        onClick={loadProofDataFromBackend}
+                        className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                      >
+                        Retry Loading Proof Data
+                      </button>
                     </div>
                   )}
 
@@ -597,48 +662,24 @@ export default function AuctionPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="proofJson" className="block text-sm font-medium text-gray-700 mb-2">
-                        Proof JSON (proof.json)
-                      </label>
-                      <textarea
-                        id="proofJson"
-                        placeholder='{"pi_a": [...], "pi_b": [...], "pi_c": [...], "protocol": "groth16", "curve": "bn128"}'
-                        value={proofJson}
-                        onChange={(e) => setProofJson(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 font-mono text-sm h-32 resize-none"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Paste the contents of your proof.json file
+                  {proofLoading && (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-500 mr-3" />
+                      <span className="text-gray-700 font-medium">Loading proof data...</span>
+                    </div>
+                  )}
+
+                  {loadedProofData && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <span className="text-sm font-medium text-green-800">Proof Data Loaded Successfully</span>
+                      </div>
+                      <p className="text-xs text-green-700">
+                        Mock proof data loaded successfully. Ready to submit to auction contract.
                       </p>
                     </div>
-
-                    <div>
-                      <label htmlFor="publicSignals" className="block text-sm font-medium text-gray-700 mb-2">
-                        Public Signals JSON (public.json)
-                      </label>
-                      <textarea
-                        id="publicSignals"
-                        placeholder='["value1", "value2", "value3", "value4", "value5", "value6"]'
-                        value={publicSignals}
-                        onChange={(e) => setPublicSignals(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 font-mono text-sm h-24 resize-none"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Paste the contents of your public.json file (array of 6 values)
-                      </p>
-                    </div>
-                  </div>
-
-                  <button 
-                    className="w-full bg-gray-900 text-white py-2 px-4 rounded hover:bg-gray-800 transition-colors" 
-                    onClick={handleParseProof} 
-                    disabled={!proofJson || !publicSignals}
-                  >
-                    <Upload className="mr-2 h-4 w-4 inline" />
-                    Parse Proof and Continue
-                  </button>
+                  )}
                 </div>
               )}
 
@@ -649,9 +690,21 @@ export default function AuctionPage() {
                     <CheckCircle2 className="h-12 w-12 text-blue-500 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Submit</h3>
                     <p className="text-gray-600">
-                      Your proof has been parsed successfully! Review your bid details below.
+                      Mock proof data is ready! Review your bid details below.
                     </p>
                   </div>
+
+                  {loadedProofData && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-800">Proof Data Ready</span>
+                      </div>
+                      <p className="text-xs text-blue-700">
+                        Mock proof data ready to submit. In production, this would be calculated from your burn transaction.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-4">
@@ -710,19 +763,25 @@ export default function AuctionPage() {
                   </div>
 
                   <button 
-                    className="w-full bg-gray-900 text-white py-2 px-4 rounded hover:bg-gray-800 transition-colors" 
+                    className="w-full bg-gray-900 text-white py-2 px-4 rounded hover:bg-gray-800 transition-colors disabled:opacity-50" 
                     onClick={handleSubmitBid} 
-                    disabled={isProcessing}
+                    disabled={isProcessing || !loadedProofData}
                   >
                     {isProcessing ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                        Submitting to Contract...
+                        {proofSubmissionStatus === 'loading' ? 'Submitting Bid to Contract...' : 'Submitting to Contract...'}
                       </>
                     ) : (
                       "Submit Bid to Contract"
                     )}
                   </button>
+
+                  {proofSubmissionStatus === 'error' && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <p className="text-sm text-red-800">Proof submission failed. Please try again.</p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -734,7 +793,7 @@ export default function AuctionPage() {
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">Bid Submitted Successfully!</h3>
                     <p className="text-gray-600">
                       Your bid has been successfully submitted to the auction contract. 
-                      You can now wait for the auction to close and results to be revealed.
+                      The proof data was automatically loaded and processed by the backend system.
                     </p>
                   </div>
 
@@ -771,13 +830,13 @@ export default function AuctionPage() {
                           </div>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600 mb-1">Bid Submission Transaction</p>
+                          <p className="text-sm text-gray-600 mb-1">Proof Submission Transaction</p>
                           <div className="flex items-center gap-2">
                             <p className="font-mono text-xs text-gray-900 break-all flex-1">
-                              {bidSubmitTxHash}
+                              {proofSubmissionTxHash || bidSubmitTxHash}
                             </p>
                             <a
-                              href={getExplorerUrl(bidSubmitTxHash)}
+                              href={getExplorerUrl(proofSubmissionTxHash || bidSubmitTxHash)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-gray-600 hover:text-gray-900"

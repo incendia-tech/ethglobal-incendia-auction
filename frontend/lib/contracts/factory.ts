@@ -2,8 +2,8 @@ import { FACTORY_ADDRESS } from "./factory-abi"
 import { createPublicClient, http } from 'viem'
 import { sepolia } from 'viem/chains'
 
-// Public Sepolia RPC endpoint
-const PUBLIC_RPC = "https://ethereum-sepolia.publicnode.com"
+// Public Sepolia RPC endpoint (fallback)
+const PUBLIC_RPC = process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia.publicnode.com"
 
 // Setup viem client
 const publicClient = createPublicClient({
