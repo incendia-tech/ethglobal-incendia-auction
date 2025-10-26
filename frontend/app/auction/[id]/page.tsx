@@ -596,7 +596,7 @@ export default function AuctionPage() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono text-sm"
                       />
                       <p className="text-xs text-gray-600 mt-1">
-                        Your sealed bid amount (minimum: 0.001 ETH)
+                        Your sealed bid amount
                       </p>
                     </div>
                   </div>
@@ -626,7 +626,7 @@ export default function AuctionPage() {
                       !bidAmount ||
                       !contractAddress ||
                       !auctionDetails ||
-                      Number.parseFloat(burnAmount) < 0.0001 ||
+                      Number.parseFloat(burnAmount) < 0 ||
                       Number.parseFloat(bidAmount) < 0.001
                     }
                   >
