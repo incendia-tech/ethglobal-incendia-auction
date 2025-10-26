@@ -1,0 +1,4 @@
+artifacts/
+cache/
+benchmark/vote/txs/
+node_modules/
