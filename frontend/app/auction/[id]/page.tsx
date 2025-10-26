@@ -613,12 +613,6 @@ export default function AuctionPage() {
                         <span className="text-gray-600 text-sm">Bid Amount:</span>
                         <span className="font-mono text-sm font-bold text-green-600">{bidAmount || "0"} ETH</span>
                       </div>
-                      <div className="flex justify-between items-center py-2 border-t border-gray-300">
-                        <span className="text-sm font-bold text-gray-900">Total:</span>
-                        <span className="font-mono text-base font-bold text-blue-600">
-                          {Number.parseFloat(burnAmount || "0") + Number.parseFloat(bidAmount || "0")} ETH
-                        </span>
-                      </div>
                     </div>
                   </div>
 
@@ -807,14 +801,6 @@ export default function AuctionPage() {
                           <div className="flex justify-between">
                             <span className="text-gray-600">Confirmations:</span>
                             <span className="font-mono text-green-600">{txConfirmations}</span>
-                          </div>
-                          <div className="border-t pt-2">
-                            <div className="flex justify-between">
-                              <span className="font-medium">Total:</span>
-                              <span className="font-mono font-semibold">
-                                {Number.parseFloat(burnAmount || "0") + Number.parseFloat(bidAmount || "0")} ETH
-                              </span>
-                            </div>
                           </div>
                         </div>
                       </div>
