@@ -141,6 +141,25 @@ export default function AuctionPage() {
     }
   }
 
+  const resetForNewTransaction = () => {
+    setCurrentStep("input")
+    setBurnAmount("")
+    setBidAmount("")
+    setBurnTxHash("")
+    setBidSubmitTxHash("")
+    setProofSubmissionTxHash("")
+    setTxConfirmations(0)
+    setError("")
+    setProofError("")
+    setProofSubmissionStatus('idle')
+    setLoadedProofData(null)
+    setProofJson("")
+    setPublicSignals("")
+    setParsedProof(null)
+    setIsProcessing(false)
+  }
+
+
   const executeBurnTransaction = async () => {
     setIsProcessing(true)
     setCurrentStep("burn")
@@ -204,7 +223,32 @@ export default function AuctionPage() {
 
   const handleSubmitBid = async () => {
     if (!parsedProof) {
-      setError("No proof data available")
+      setError("No proof data available. Please ensure proof data is loaded.")
+      return
+    }
+
+    if (!publicSignals) {
+      setError("No public signals available. Please ensure proof data is loaded.")
+      return
+    }
+
+    // Validate proof structure
+    if (!parsedProof.pi_a || !parsedProof.pi_b || !parsedProof.pi_c) {
+      setError("Invalid proof data structure. Please reload the page and try again.")
+      return
+    }
+
+    // Additional validation for proof arrays
+    if (!Array.isArray(parsedProof.pi_a) || parsedProof.pi_a.length < 2) {
+      setError(`Invalid proof.pi_a: expected array with at least 2 elements, got ${parsedProof.pi_a?.length || 'undefined'}`)
+      return
+    }
+    if (!Array.isArray(parsedProof.pi_b) || parsedProof.pi_b.length < 2) {
+      setError(`Invalid proof.pi_b: expected array with at least 2 elements, got ${parsedProof.pi_b?.length || 'undefined'}`)
+      return
+    }
+    if (!Array.isArray(parsedProof.pi_c) || parsedProof.pi_c.length < 2) {
+      setError(`Invalid proof.pi_c: expected array with at least 2 elements, got ${parsedProof.pi_c?.length || 'undefined'}`)
       return
     }
 
@@ -217,6 +261,18 @@ export default function AuctionPage() {
 
       // Parse public signals from JSON string
       const parsedPublicSignals = JSON.parse(publicSignals)
+      
+      // Debug logging
+      console.log("Submitting bid with data:", {
+        contractAddress,
+        parsedProof: {
+          pi_a: parsedProof.pi_a,
+          pi_b: parsedProof.pi_b,
+          pi_c: parsedProof.pi_c
+        },
+        parsedPublicSignals,
+        bidAmountWei
+      })
       
       // Submit bid transaction directly via MetaMask
       const txHash = await submitBidToContract(
@@ -491,7 +547,7 @@ export default function AuctionPage() {
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 mb-2">Enter Your Bid Details</h3>
                     <p className="text-gray-600 text-sm">
-                      Specify the amount to burn and your sealed bid amount
+                      Specify the amount to burn as proof of participation and your sealed bid amount
                     </p>
                   </div>
 
@@ -512,7 +568,7 @@ export default function AuctionPage() {
                         placeholder="0.0"
                         value={burnAmount}
                         onChange={(e) => setBurnAmount(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono text-sm"
                       />
                       <p className="text-xs text-gray-600 mt-1">
                         Amount to burn as proof of participation
@@ -531,7 +587,7 @@ export default function AuctionPage() {
                       <input
                         id="bidAmount"
                         type="number"
-                        step="0.01"
+                        step="0.0001"
                         placeholder="0.0"
                         value={bidAmount}
                         onChange={(e) => setBidAmount(e.target.value)}
@@ -574,6 +630,7 @@ export default function AuctionPage() {
                       !bidAmount ||
                       !contractAddress ||
                       !auctionDetails ||
+                      Number.parseFloat(burnAmount) < 0.0001 ||
                       Number.parseFloat(bidAmount) < 0.001
                     }
                   >

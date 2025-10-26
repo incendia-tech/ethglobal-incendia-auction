@@ -81,8 +81,38 @@ function encodeProofForContract(proof: Groth16Proof): string {
 
 function createBidTransactionData(proof: Groth16Proof, publicSignals: string[], bidAmount: string): string {
   try {
+    console.log("Creating bid transaction data with:", {
+      proof: {
+        pi_a: proof.pi_a,
+        pi_a_length: proof.pi_a?.length,
+        pi_b: proof.pi_b,
+        pi_b_length: proof.pi_b?.length,
+        pi_c: proof.pi_c,
+        pi_c_length: proof.pi_c?.length
+      },
+      publicSignals,
+      publicSignals_length: publicSignals?.length,
+      bidAmount
+    })
+
+    // Validate proof structure
+    if (!proof.pi_a || !Array.isArray(proof.pi_a) || proof.pi_a.length < 2) {
+      throw new Error(`Invalid proof.pi_a structure: expected array with at least 2 elements, got ${proof.pi_a?.length || 'undefined'}`)
+    }
+    if (!proof.pi_b || !Array.isArray(proof.pi_b) || proof.pi_b.length < 2) {
+      throw new Error(`Invalid proof.pi_b structure: expected array with at least 2 elements, got ${proof.pi_b?.length || 'undefined'}`)
+    }
+    if (!proof.pi_c || !Array.isArray(proof.pi_c) || proof.pi_c.length < 2) {
+      throw new Error(`Invalid proof.pi_c structure: expected array with at least 2 elements, got ${proof.pi_c?.length || 'undefined'}`)
+    }
+    if (!publicSignals || !Array.isArray(publicSignals) || publicSignals.length !== 6) {
+      throw new Error("Invalid publicSignals structure")
+    }
+
     // Convert proof format for Solidity (G2 element conversion)
     const convertedProof = convertG2Format(proof)
+    
+    console.log("Converted proof:", convertedProof)
     
     // Encode the function call using viem
     const functionData = encodeFunctionData({
@@ -97,10 +127,16 @@ function createBidTransactionData(proof: Groth16Proof, publicSignals: string[], 
       ]
     })
     
+    console.log("Encoded function data:", functionData)
     return functionData
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error encoding function data:", error)
-    throw new Error("Failed to encode transaction data")
+    console.error("Error details:", {
+      proof: proof,
+      publicSignals: publicSignals,
+      bidAmount: bidAmount
+    })
+    throw new Error(`Failed to encode transaction data: ${error.message || error}`)
   }
 }
 
