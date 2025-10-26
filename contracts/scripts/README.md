@@ -4,18 +4,8 @@ This directory contains deployment scripts for the Auction system contracts.
 
 ## Available Scripts
 
-### 1. Simple Deployment (`deploy-simple.ts`)
-Deploys only the core contracts (Groth16Verifier and Factory).
 
-```bash
-npx hardhat run scripts/deploy-simple.ts --network hardhat
-```
-
-**Output:**
-- Groth16Verifier contract address
-- Factory contract address
-
-### 2. Full Deployment (`deploy.ts`)
+### Deployment (`deploy.ts`)
 Deploys all contracts including an Auction contract through the Factory.
 
 ```bash
@@ -50,7 +40,7 @@ export SEPOLIA_PRIVATE_KEY="your_private_key"
 
 ### Deploy to Hardhat (local testing)
 ```bash
-npx hardhat run scripts/deploy-simple.ts --network hardhat
+npx hardhat run scripts/deploy.ts --network hardhat
 ```
 
 ### Deploy to Sepolia testnet

@@ -86,7 +86,7 @@ npx hardhat test
 npx hardhat run scripts/send-op-tx.ts --network hardhatMainnet
 
 # Use Ignition deployment
-npx hardhat ignition deploy ignition/modules/Counter.ts --network hardhatMainnet
+npx hardhat ignition deploy ignition/modules/Auction.ts --network hardhatMainnet
 ```
 
 ## 📋 Component Status Summary
