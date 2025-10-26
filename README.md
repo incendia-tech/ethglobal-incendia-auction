@@ -22,13 +22,8 @@ The system ensures fairness and privacy through similar proof structures but ada
 - **Scalability and Efficiency**: Bids are submitted in plaintext, and verification is lightweight, resulting in low on-chain computation and gas costs.
 
 
-## Repository Layout
-
 ## Prerequisites
 
 Before setting up the project, ensure the following tools are installed:
 
 - **Node.js** (>=16.0.0) - [Install Node.js](https://nodejs.org/)
-- **Rust** (for Cargo) - [Install Rust](https://www.rust-lang.org/tools/install)
-- **Homebrew** (for macOS) - [Install Homebrew](https://brew.sh/)
-- **Circom** - [Install Circom](https://docs.circom.io/getting-started/installation/)
