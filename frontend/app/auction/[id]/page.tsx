@@ -214,25 +214,27 @@ export default function AuctionPage() {
 
     try {
       const bidAmountWei = Math.floor(Number.parseFloat(bidAmount) * 1e18).toString()
+
+      // Parse public signals from JSON string
+      const parsedPublicSignals = JSON.parse(publicSignals)
       
-      // Submit proof to backend
-      const result = await submitProofToBackend(
+      // Submit bid transaction directly via MetaMask
+      const txHash = await submitBidToContract(
         contractAddress,
-        burnTxHash,
-        bidAmountWei,
-        walletAddress
+        parsedProof,
+        parsedPublicSignals,
+        bidAmountWei
       )
 
-      if (result.success && result.transactionHash) {
-        setProofSubmissionTxHash(result.transactionHash)
-        setBidSubmitTxHash(result.transactionHash)
+      if (txHash) {
+        setProofSubmissionTxHash(txHash)
+        setBidSubmitTxHash(txHash)
         setProofSubmissionStatus('success')
         setCurrentStep("complete")
         
-        // Log the result message for debugging
-        console.log('Proof submission result:', result.message)
+        console.log('Bid submitted successfully:', txHash)
       } else {
-        throw new Error(result.error || "Proof submission failed")
+        throw new Error("Transaction submission failed")
       }
     } catch (error: any) {
       console.error("Bid submission failed:", error)
@@ -688,9 +690,9 @@ export default function AuctionPage() {
                 <div className="space-y-6">
                   <div className="text-center py-4">
                     <CheckCircle2 className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Submit</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Submit via MetaMask</h3>
                     <p className="text-gray-600">
-                      Mock proof data is ready! Review your bid details below.
+                      Proof data loaded from data folder! Submit your bid transaction through MetaMask.
                     </p>
                   </div>
 
@@ -770,10 +772,10 @@ export default function AuctionPage() {
                     {isProcessing ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                        {proofSubmissionStatus === 'loading' ? 'Submitting Bid to Contract...' : 'Submitting to Contract...'}
+                        {proofSubmissionStatus === 'loading' ? 'Submitting via MetaMask...' : 'Submitting via MetaMask...'}
                       </>
                     ) : (
-                      "Submit Bid to Contract"
+                      "Submit Bid via MetaMask"
                     )}
                   </button>
 
@@ -792,8 +794,8 @@ export default function AuctionPage() {
                     <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">Bid Submitted Successfully!</h3>
                     <p className="text-gray-600">
-                      Your bid has been successfully submitted to the auction contract. 
-                      The proof data was automatically loaded and processed by the backend system.
+                      Your bid has been successfully submitted to the auction contract via MetaMask. 
+                      The proof data was automatically loaded from the data folder and submitted directly through your wallet.
                     </p>
                   </div>
 

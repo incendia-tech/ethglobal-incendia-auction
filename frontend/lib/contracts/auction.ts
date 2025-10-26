@@ -2,6 +2,24 @@
 
 import type { ProofData } from "./auction-abi"
 import { sendTransaction, waitForTransaction, encodeUint256, encodeUint256Array } from "../ethereum/transactions"
+import { encodeFunctionData } from "viem"
+
+// Auction contract ABI for submitBid function
+const AUCTION_ABI = [
+  {
+    inputs: [
+      { internalType: "uint256[2]", name: "proofA", type: "uint256[2]" },
+      { internalType: "uint256[2][2]", name: "proofB", type: "uint256[2][2]" },
+      { internalType: "uint256[2]", name: "proofC", type: "uint256[2]" },
+      { internalType: "uint256[6]", name: "pubSignals", type: "uint256[6]" },
+      { internalType: "uint256", name: "_bid", type: "uint256" }
+    ],
+    name: "submitBid",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function"
+  }
+] as const
 
 export interface Groth16Proof {
   pi_a: string[]
@@ -29,14 +47,12 @@ export function parseGroth16Proof(proofData: string): Groth16Proof {
 export async function submitBidToContract(
   contractAddress: string,
   proof: Groth16Proof,
+  publicSignals: string[],
   bidAmount: string
 ): Promise<string> {
   try {
-    // Encode the proof data for the contract call
-    const proofData = encodeProofForContract(proof)
-    
-    // Create the transaction data
-    const data = createBidTransactionData(proofData, bidAmount)
+    // Create the transaction data using proper viem encoding
+    const data = createBidTransactionData(proof, publicSignals, bidAmount)
     
     // Send the transaction
     const txHash = await sendTransaction(contractAddress, "0x0", data)
@@ -63,8 +79,40 @@ function encodeProofForContract(proof: Groth16Proof): string {
   return pi_a_encoded + pi_b_encoded + pi_c_encoded
 }
 
-function createBidTransactionData(proofData: string, bidAmount: string): string {
-  // This would be the actual function selector and encoded parameters
-  // For now, return a placeholder
-  return "0x" + proofData.slice(2) + encodeUint256(bidAmount).slice(2)
+function createBidTransactionData(proof: Groth16Proof, publicSignals: string[], bidAmount: string): string {
+  try {
+    // Convert proof format for Solidity (G2 element conversion)
+    const convertedProof = convertG2Format(proof)
+    
+    // Encode the function call using viem
+    const functionData = encodeFunctionData({
+      abi: AUCTION_ABI,
+      functionName: 'submitBid',
+      args: [
+        convertedProof.pi_a.map(BigInt) as [bigint, bigint], // proofA
+        convertedProof.pi_b.map(row => row.map(BigInt)) as [[bigint, bigint], [bigint, bigint]], // proofB
+        convertedProof.pi_c.map(BigInt) as [bigint, bigint], // proofC
+        publicSignals.map(BigInt) as [bigint, bigint, bigint, bigint, bigint, bigint], // pubSignals
+        BigInt(bidAmount) // _bid
+      ]
+    })
+    
+    return functionData
+  } catch (error) {
+    console.error("Error encoding function data:", error)
+    throw new Error("Failed to encode transaction data")
+  }
+}
+
+function convertG2Format(proof: Groth16Proof): Groth16Proof {
+  return {
+    pi_a: proof.pi_a.slice(0, 2), // Take first 2 elements
+    pi_b: [
+      [proof.pi_b[0][1], proof.pi_b[0][0]], // Swap x0,x1 and y0,y1
+      [proof.pi_b[1][1], proof.pi_b[1][0]]
+    ],
+    pi_c: proof.pi_c.slice(0, 2), // Take first 2 elements
+    protocol: proof.protocol,
+    curve: proof.curve
+  }
 }

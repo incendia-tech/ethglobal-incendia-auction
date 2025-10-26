@@ -13,21 +13,34 @@ export async function sendTransaction(to: string, value: string, data?: string):
     throw new Error("No connected account")
   }
 
-  const txHash = await provider.request({
-    method: "eth_sendTransaction",
-    params: [
-      {
-        from: accounts[0],
-        to,
-        value,
-        data,
-        gas: "0x9a42", // 39490 gas limit (exactly the minimum needed)
-        gasLimit: "0x9a42", // Alternative gas limit parameter
-      },
-    ],
-  })
-
-  return txHash
+  try {
+    const transactionParams = {
+      from: accounts[0],
+      to,
+      value,
+      data,
+      gas: "0x7a120", // 500,000 gas limit (needed for ZK proof verification)
+      gasLimit: "0x7a120", // Alternative gas limit parameter
+    }
+    
+    console.log("MetaMask transaction params:", transactionParams)
+    console.log("Data length:", data?.length)
+    console.log("Data preview:", data?.slice(0, 100) + "...")
+    
+    const txHash = await provider.request({
+      method: "eth_sendTransaction",
+      params: [transactionParams],
+    })
+    return txHash
+  } catch (error: any) {
+    console.error("MetaMask transaction error:", error)
+    console.error("Error details:", {
+      code: error.code,
+      message: error.message,
+      data: error.data
+    })
+    throw new Error(`MetaMask transaction failed: ${error.message || error.code || 'Unknown error'}`)
+  }
 }
 
 export async function waitForTransaction(txHash: string, confirmations: number = 1): Promise<void> {
