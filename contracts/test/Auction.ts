@@ -9,8 +9,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load proof data using utility functions
-const proofPath = path.join(__dirname, "../../data/proof.json");
-const publicPath = path.join(__dirname, "../../data/public.json");
+const proofPath = path.join(__dirname, "../../data/bid0/proof.json");
+const publicPath = path.join(__dirname, "../../data/bid0/public.json");
 
 let proofData: any = null;
 let publicSignals: any = null;
