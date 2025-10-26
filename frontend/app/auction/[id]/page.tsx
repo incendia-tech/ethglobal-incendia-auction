@@ -14,6 +14,7 @@ import Link from "next/link"
 import { getMetaMaskProvider, connectWallet as connectMetaMask, getConnectedAccount } from "@/lib/ethereum/wallet"
 import { sendTransaction, waitForTransaction } from "@/lib/ethereum/transactions"
 import { submitBidToContract, parseGroth16Proof, type Groth16Proof } from "@/lib/contracts/auction"
+import { parseEther } from "viem"
 import { getAuctionDetails } from "@/lib/contracts/factory"
 import { BurnAddressCalculator } from "@/lib/contracts/burn-address-calculator"
 import { loadProofData, submitProofToBackend, type LoadedProofData } from "@/lib/proof-loader"
@@ -257,7 +258,8 @@ export default function AuctionPage() {
     setProofSubmissionStatus('loading')
 
     try {
-      const bidAmountWei = Math.floor(Number.parseFloat(bidAmount) * 1e18).toString()
+      // Convert ETH to wei using viem's parseEther to avoid scientific notation issues
+      const bidAmountWei = parseEther(bidAmount).toString()
 
       // Parse public signals from JSON string
       const parsedPublicSignals = JSON.parse(publicSignals)
