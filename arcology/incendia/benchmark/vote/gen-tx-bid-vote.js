@@ -77,7 +77,7 @@ async function main() {
           proofB,
           proofC,
           pubSignals,
-          100 + i * 146 
+          Math.floor(Math.random() * 2) 
         );
     await frontendUtil.writePreSignedTxFile(handle_vote, signer, tx);
     if (i > 0 && i % percent == 0) {

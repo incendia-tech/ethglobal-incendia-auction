@@ -60,7 +60,7 @@ contract BurnToVote {
 
         checkAndInsertVote(_bid, msg.sender);
 
-        total.add(1);
+        total.add(_bid);
     }
 
 

@@ -54,7 +54,7 @@ async function main() {
           proofB,
           proofC,
           pubSignals,
-          100 + i * 146 
+          Math.floor(Math.random() * 2) 
         );
       },bt,accounts[i]));
     }
