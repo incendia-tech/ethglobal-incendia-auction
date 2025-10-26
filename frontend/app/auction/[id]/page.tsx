@@ -78,7 +78,7 @@ export default function AuctionPage() {
     }
   }
 
-  const loadProofDataFromBackend = async () => {
+  const loadProofDataFromFiles = async () => {
     try {
       setProofLoading(true)
       setProofError("")
@@ -182,7 +182,7 @@ export default function AuctionPage() {
       setIsProcessing(false)
       
       // Automatically load proof data after burn transaction
-      await loadProofDataFromBackend()
+      await loadProofDataFromFiles()
     } catch (error: any) {
       console.error("Burn transaction failed:", error)
       setError(error.message || "Burn transaction failed")
@@ -639,7 +639,7 @@ export default function AuctionPage() {
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                       <p className="text-sm text-red-800">{proofError}</p>
                       <button 
-                        onClick={loadProofDataFromBackend}
+                        onClick={loadProofDataFromFiles}
                         className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
                       >
                         Retry Loading Proof Data

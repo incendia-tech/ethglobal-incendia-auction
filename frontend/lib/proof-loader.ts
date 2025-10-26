@@ -20,7 +20,7 @@ export interface LoadedProofData {
 // Load proof data from the data folder
 export async function loadProofData(): Promise<LoadedProofData> {
   try {
-    // In a real implementation, you might want to fetch from a backend endpoint
+    // In a real implementation, you might want to fetch from a remote endpoint
     // For now, we'll return the data directly since it's static
     const proofData: ProofData = {
       "pi_a": [
@@ -83,7 +83,7 @@ export function convertG2Format(proof: ProofData): ProofData {
   }
 }
 
-// Submit proof to backend
+// Submit proof to API (fallback for mock transactions)
 export async function submitProofToBackend(
   contractAddress: string,
   burnTxHash: string,

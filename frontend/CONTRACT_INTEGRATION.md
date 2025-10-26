@@ -2,7 +2,7 @@
 
 ## Overview
 
-The backend API now supports actual contract interaction using viem. When properly configured, it will submit real transactions to the auction contract on Sepolia testnet.
+The frontend now supports direct contract interaction via MetaMask. Users submit transactions directly through their wallet, giving them full control over their transactions on Sepolia testnet.
 
 ## Environment Variables
 
@@ -12,9 +12,9 @@ Create a `.env.local` file in the frontend directory with the following variable
 # Sepolia RPC URL (get from Infura, Alchemy, or other providers)
 SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_KEY
 
-# Private key for the account that will submit transactions
-# WARNING: Never commit real private keys to version control!
-PRIVATE_KEY=0xYOUR_PRIVATE_KEY_HERE
+# Contract addresses (deployed on Sepolia)
+FACTORY_ADDRESS=0xe7f1725e7734ce288f8367e1bb143e90bb3f0512
+VERIFIER_ADDRESS=0x5fbdb2315678afecb367f032d93f642f64180aa3
 ```
 
 ## Getting Started
@@ -24,9 +24,10 @@ PRIVATE_KEY=0xYOUR_PRIVATE_KEY_HERE
 - Create a new project
 - Copy the Sepolia RPC URL
 
-### 2. Get a Test Account
-- Create a new MetaMask wallet or use an existing one
-- Export the private key (Settings → Security & Privacy → Reveal Private Key)
+### 2. Connect MetaMask
+- Install MetaMask browser extension
+- Create a new wallet or use an existing one
+- Switch to Sepolia testnet
 - Fund the account with Sepolia ETH from a [faucet](https://sepoliafaucet.com/)
 
 ### 3. Deploy the Contract

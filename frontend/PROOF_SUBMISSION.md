@@ -2,7 +2,7 @@
 
 ## Overview
 
-The frontend now automatically loads proof data from the `data` folder and submits it to a backend API endpoint, streamlining the user experience for proof-of-burn auctions.
+The frontend automatically loads proof data from the `data` folder and submits it directly via MetaMask, giving users full control over their transactions in proof-of-burn auctions.
 
 ## How It Works
 
@@ -11,11 +11,10 @@ The frontend now automatically loads proof data from the `data` folder and submi
 - No manual input required from the user
 - Proof data is validated and converted to the correct format for Solidity
 
-### 2. Backend API Endpoint
-- **Endpoint**: `/api/submit-proof`
-- **Method**: POST
-- **Purpose**: Handles proof submission and processing
-- **Location**: `app/api/submit-proof/route.ts`
+### 2. MetaMask Transaction Submission
+- **Method**: Direct MetaMask transaction
+- **Purpose**: Users submit proofs directly through their wallet
+- **Control**: Full user control over transaction parameters
 
 ### 3. Proof Format Conversion
 - Automatically converts G2 element format from snarkjs to Solidity format
@@ -26,24 +25,27 @@ The frontend now automatically loads proof data from the `data` folder and submi
 
 1. **Connect Wallet** → User connects MetaMask
 2. **Enter Bid Details** → User enters burn amount and bid amount
-3. **Execute Burn** → User sends ETH to calculated burn address
+3. **Execute Burn** → User sends ETH to calculated burn address via MetaMask
 4. **Auto-Load Proof** → System automatically loads proof data from data folder
-5. **Submit to Backend** → Proof is submitted to backend API
-6. **Confirmation** → User sees transaction hash and success message
+5. **Submit via MetaMask** → User clicks "Submit Bid via MetaMask"
+6. **MetaMask Confirmation** → MetaMask popup appears for transaction confirmation
+7. **Transaction Success** → User confirms and transaction is submitted to contract
 
 ## Files Modified
 
-- `app/auction/[id]/page.tsx` - Updated auction page with automatic proof loading
-- `lib/proof-loader.ts` - New utility for loading and submitting proof data
-- `app/api/submit-proof/route.ts` - New backend API endpoint
+- `app/auction/[id]/page.tsx` - Updated auction page with automatic proof loading and MetaMask submission
+- `lib/proof-loader.ts` - Utility for loading proof data from data folder
+- `lib/contracts/auction.ts` - MetaMask transaction creation and submission
+- `lib/ethereum/transactions.ts` - MetaMask transaction utilities
 
 ## Benefits
 
+- **User Control**: All transactions go through MetaMask (no private keys needed)
 - **Streamlined UX**: No manual proof data entry required
 - **Error Reduction**: Automatic validation and format conversion
 - **Consistency**: Uses the same proof data for all submissions
 - **Real-time Status**: Shows loading and submission progress
-- **Backend Integration**: Centralized proof processing
+- **No Backend Dependencies**: Users control their own transactions
 
 ## Technical Details
 
@@ -58,32 +60,34 @@ interface ProofData {
 }
 ```
 
-### API Request Format
-```json
+### MetaMask Transaction Format
+```javascript
 {
-  "contractAddress": "0x...",
-  "burnTxHash": "0x...",
-  "bidAmount": "1000000000000000000",
-  "walletAddress": "0x..."
+  from: "0x...", // User's wallet address
+  to: "0x...",   // Auction contract address
+  value: "0x0",  // No ETH value (bid is in function parameter)
+  data: "0x...", // Encoded submitBid function call
+  gas: "0x7a120" // 500,000 gas limit for ZK proof verification
 }
 ```
 
-### API Response Format
-```json
-{
-  "success": true,
-  "transactionHash": "0x...",
-  "message": "Proof submitted successfully",
-  "proofData": { ... }
-}
+### Function Call
+```solidity
+submitBid(
+  uint256[2] proofA,
+  uint256[2][2] proofB, 
+  uint256[2] proofC,
+  uint256[6] pubSignals,
+  uint256 _bid
+)
 ```
 
 ## Status Tracking
 
 The UI shows real-time status updates:
 - `idle` - Ready to submit
-- `loading` - Submitting to backend
-- `success` - Submission successful
-- `error` - Submission failed
+- `loading` - Submitting via MetaMask
+- `success` - Transaction confirmed
+- `error` - Transaction failed
 
-This creates a smooth, automated experience for users participating in proof-of-burn auctions.
+This creates a smooth, user-controlled experience for proof-of-burn auctions where users maintain full control over their transactions.

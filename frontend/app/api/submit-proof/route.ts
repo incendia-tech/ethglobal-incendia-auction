@@ -1,3 +1,5 @@
+// This API route is a fallback for mock transactions when environment variables are not configured
+// The primary submission flow is now via MetaMask in the frontend
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'

@@ -14,12 +14,13 @@ A modern, full-featured frontend for the Incendia Zero-Knowledge Proof Auction s
 - **Automatic Proof Loading**: Loads proof data from local JSON files
 - **Proof Format Conversion**: Converts Groth16 proofs for Solidity compatibility
 - **Public Signals Processing**: Handles 6-element public signal arrays
-- **Contract Verification**: Submits proofs to on-chain verifier contracts
+- **MetaMask Submission**: Users submit proofs directly through MetaMask
 
 ### 🚀 **Advanced Features**
+- **Direct MetaMask Integration**: Users control all transactions through their wallet
+- **Automatic Proof Loading**: Proof data loads from data folder automatically
 - **Real Contract Interaction**: Live transactions on Sepolia testnet
-- **Mock Mode**: Development-friendly fallback for testing
-- **Error Handling**: Comprehensive error management and user feedback
+- **Comprehensive Error Handling**: Detailed error messages and debugging
 - **Responsive Design**: Mobile-first, modern UI with Tailwind CSS
 - **Type Safety**: Full TypeScript implementation
 
@@ -37,7 +38,8 @@ A modern, full-featured frontend for the Incendia Zero-Knowledge Proof Auction s
 ### Prerequisites
 - Node.js 18+ 
 - MetaMask wallet
-- Sepolia testnet ETH (for real transactions)
+- Sepolia testnet ETH
+- Environment variables configured (optional for contract reading)
 
 ### Installation
 
@@ -90,10 +92,11 @@ VERIFIER_ADDRESS=0x5fbdb2315678afecb367f032d93f642f64180aa3
 - Click "Execute Burn Transaction"
 - Confirm transaction in MetaMask
 
-### 3. **Submit Proof**
+### 3. **Submit Proof via MetaMask**
 - Proof data loads automatically from `data/` folder
-- Click "Submit Bid to Contract"
-- Transaction submits to auction contract
+- Click "Submit Bid via MetaMask"
+- MetaMask popup appears for transaction confirmation
+- Confirm transaction in MetaMask
 - View transaction hash and status
 
 ## 📁 Project Structure
@@ -101,7 +104,7 @@ VERIFIER_ADDRESS=0x5fbdb2315678afecb367f032d93f642f64180aa3
 ```
 frontend/
 ├── app/
-│   ├── api/submit-proof/     # Backend API for proof submission
+│   ├── api/submit-proof/     # API fallback for mock transactions
 │   ├── auction/[id]/         # Auction page component
 │   └── layout.tsx            # Root layout
 ├── components/ui/            # Reusable UI components
@@ -134,26 +137,27 @@ npm run lint
 ### Key Components
 
 - **`app/auction/[id]/page.tsx`**: Main auction interface
-- **`app/api/submit-proof/route.ts`**: Backend API for contract interaction
+- **`app/api/submit-proof/route.ts`**: API fallback for mock transactions
 - **`lib/proof-loader.ts`**: Proof data loading and submission
 - **`lib/contracts/factory.ts`**: Contract interaction utilities
 
 ## 🔄 Transaction Flow
 
-### Real Transaction Mode (Production)
-1. User connects wallet
-2. Executes burn transaction on Sepolia
-3. Proof data loads from local files
-4. Backend submits to auction contract
-5. Real transaction hash returned
-6. User can verify on Etherscan
+### Complete User Flow
+1. **Connect Wallet**: User connects MetaMask to the application
+2. **Execute Burn Transaction**: User submits burn transaction via MetaMask
+3. **Load Proof Data**: System automatically loads proof data from `data/` folder
+4. **Submit Bid**: User clicks "Submit Bid via MetaMask"
+5. **MetaMask Confirmation**: MetaMask popup appears for transaction confirmation
+6. **Transaction Success**: User confirms and transaction is submitted to contract
+7. **Verification**: User can verify transaction on Etherscan
 
-### Mock Transaction Mode (Development)
-1. User connects wallet
-2. Simulates burn transaction
-3. Proof data loads from local files
-4. Backend returns mock transaction hash
-5. No actual blockchain interaction
+### Key Features
+- **User Control**: All transactions go through MetaMask (no private keys needed)
+- **Automatic Loading**: Proof data loads automatically from local files
+- **Real Blockchain**: All transactions are real and verifiable on Sepolia
+- **Gas Optimization**: Proper gas limits for ZK proof verification (500,000 gas)
+- **No Backend Dependencies**: Users control their own transactions
 
 ## 🐛 Troubleshooting
 
@@ -170,8 +174,9 @@ npm run lint
 
 **"Transaction failed"**
 - Verify account has sufficient Sepolia ETH
-- Check gas limits and network congestion
-- Ensure contract addresses are correct
+- Check gas limits (should be 500,000 for ZK proof verification)
+- Ensure you're on Sepolia testnet
+- Check browser console for detailed error messages
 
 ### Debug Mode
 
@@ -186,28 +191,30 @@ Enable detailed logging by checking browser console and server logs for transact
 
 ## 📚 API Reference
 
-### POST `/api/submit-proof`
+### MetaMask Transaction Flow
 
-Submits a ZK proof to the auction contract.
+Users submit transactions directly through MetaMask, not via API.
 
-**Request Body:**
-```json
+**Transaction Parameters:**
+```javascript
 {
-  "contractAddress": "0x...",
-  "burnTxHash": "0x...",
-  "bidAmount": "1000000000000000000",
-  "walletAddress": "0x..."
+  from: "0x...", // User's wallet address
+  to: "0x...",   // Auction contract address
+  value: "0x0",  // No ETH value (bid is in function parameter)
+  data: "0x...", // Encoded submitBid function call
+  gas: "0x7a120" // 500,000 gas limit for ZK proof verification
 }
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "transactionHash": "0x...",
-  "message": "Bid submitted successfully to contract",
-  "proofData": { ... }
-}
+**Function Call:**
+```solidity
+submitBid(
+  uint256[2] proofA,
+  uint256[2][2] proofB, 
+  uint256[2] proofC,
+  uint256[6] pubSignals,
+  uint256 _bid
+)
 ```
 
 ## 🤝 Contributing
