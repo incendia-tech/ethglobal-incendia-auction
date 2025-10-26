@@ -3,6 +3,7 @@
 export interface EthereumProvider {
   isMetaMask?: boolean
   isTrust?: boolean
+  providers?: EthereumProvider[]
   request: (args: { method: string; params?: any[] }) => Promise<any>
   on: (event: string, handler: (...args: any[]) => void) => void
   removeListener: (event: string, handler: (...args: any[]) => void) => void
@@ -23,15 +24,16 @@ async function detectMetaMaskViaEIP6963(): Promise<EthereumProvider | null> {
     }
 
     let found = false
-    const handler = (event: CustomEvent) => {
-      if (event.detail.info.name === "MetaMask" && !found) {
+    const handler = (event: Event) => {
+      const customEvent = event as CustomEvent
+      if (customEvent.detail?.info?.name === "MetaMask" && !found) {
         found = true
-        window.removeEventListener("eip6963:announceProvider", handler)
-        resolve(event.detail.provider)
+        window.removeEventListener("eip6963:announceProvider", handler as EventListener)
+        resolve(customEvent.detail.provider)
       }
     }
 
-    window.addEventListener("eip6963:announceProvider", handler)
+    window.addEventListener("eip6963:announceProvider", handler as EventListener)
 
     // Request existing providers
     window.dispatchEvent(new Event("eip6963:requestProvider"))
@@ -39,7 +41,7 @@ async function detectMetaMaskViaEIP6963(): Promise<EthereumProvider | null> {
     // Timeout after 1 second
     setTimeout(() => {
       if (!found) {
-        window.removeEventListener("eip6963:announceProvider", handler)
+        window.removeEventListener("eip6963:announceProvider", handler as EventListener)
         resolve(null)
       }
     }, 1000)
@@ -56,13 +58,16 @@ export async function getMetaMaskProvider(): Promise<EthereumProvider | null> {
   if (provider) return provider
 
   // Fallback: Check providers array
-  if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
+  if (Array.isArray(window.ethereum)) {
+    const metamask = window.ethereum.find((p: EthereumProvider) => p.isMetaMask && !p.isTrust)
+    if (metamask) return metamask
+  } else if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
     const metamask = window.ethereum.providers.find((p: EthereumProvider) => p.isMetaMask && !p.isTrust)
     if (metamask) return metamask
   }
 
   // Last resort: Check if window.ethereum is MetaMask
-  if (window.ethereum.isMetaMask && !window.ethereum.isTrust) {
+  if (!Array.isArray(window.ethereum) && window.ethereum.isMetaMask && !window.ethereum.isTrust) {
     return window.ethereum
   }
 
